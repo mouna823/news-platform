@@ -1,0 +1,131 @@
+{
+  "title": "News Platform — Tableau de bord",
+  "uid": "news-overview",
+  "schemaVersion": 38,
+  "version": 2,
+  "refresh": "1m",
+  "time": { "from": "now-7d", "to": "now" },
+  "tags": ["news", "media"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "📰 Articles aujourd'hui",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT COALESCE(SUM(count),0) as value FROM articles_per_source WHERE date = CURRENT_DATE", "format": "table" }],
+      "options": { "colorMode": "background", "graphMode": "area", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "green", "mode": "fixed" }, "unit": "short", "displayName": "Aujourd'hui" } }
+    },
+    {
+      "id": 2,
+      "title": "📊 Total 7 jours",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT COALESCE(SUM(count),0) as value FROM articles_per_source WHERE date >= CURRENT_DATE - INTERVAL '7 days'", "format": "table" }],
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "blue", "mode": "fixed" }, "unit": "short", "displayName": "7 derniers jours" } }
+    },
+    {
+      "id": 3,
+      "title": "🌍 Sources actives",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT COUNT(DISTINCT source) as value FROM articles_per_source WHERE date >= CURRENT_DATE - INTERVAL '7 days'", "format": "table" }],
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "purple", "mode": "fixed" }, "unit": "short", "displayName": "Sources" } }
+    },
+    {
+      "id": 4,
+      "title": "🔤 Mots-clés uniques",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT COUNT(*) as value FROM top_keywords WHERE date = CURRENT_DATE", "format": "table" }],
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "orange", "mode": "fixed" }, "unit": "short", "displayName": "Keywords" } }
+    },
+    {
+      "id": 5,
+      "title": "📈 Tendance — Articles par jour",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT date as time, source, count as value FROM articles_per_source WHERE date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY date", "format": "table" }],
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 2, "fillOpacity": 15, "spanNulls": true }, "unit": "short" },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "title": "🥧 Répartition par source (7 jours)",
+      "type": "piechart",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 12 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT source as metric, SUM(count) as value FROM articles_per_source WHERE date >= CURRENT_DATE - INTERVAL '7 days' GROUP BY source ORDER BY value DESC", "format": "table" }],
+      "options": { "pieType": "donut", "displayLabels": ["name", "percent"], "legendDisplayMode": "table" }
+    },
+    {
+      "id": 7,
+      "title": "📊 Articles par source — aujourd'hui",
+      "type": "bargauge",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT source as metric, COALESCE(count,0) as value FROM articles_per_source WHERE date = CURRENT_DATE ORDER BY count DESC", "format": "table" }],
+      "options": { "orientation": "horizontal", "displayMode": "gradient", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [
+            { "color": "red", "value": 0 },
+            { "color": "yellow", "value": 15 },
+            { "color": "green", "value": 30 }
+          ]},
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "☁️ Top 20 Mots-clés",
+      "type": "table",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT INITCAP(keyword) as Mot, frequency as Fréquence FROM top_keywords WHERE date = CURRENT_DATE ORDER BY frequency DESC LIMIT 20", "format": "table" }],
+      "options": { "sortBy": [{ "displayName": "Fréquence", "desc": true }], "cellHeight": "sm" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [{
+          "matcher": { "id": "byName", "options": "Fréquence" },
+          "properties": [{ "id": "custom.displayMode", "value": "lcd-gauge" }, { "id": "color", "value": { "mode": "thresholds" } }, { "id": "thresholds", "value": { "steps": [{"color":"blue","value":0},{"color":"green","value":10},{"color":"orange","value":30},{"color":"red","value":60}] } }]
+        }]
+      }
+    },
+    {
+      "id": 9,
+      "title": "📅 Heatmap — Activité par jour de la semaine",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 6 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT TO_CHAR(date, 'Day') as jour, SUM(count) as total_articles, COUNT(DISTINCT source) as sources_actives FROM articles_per_source WHERE date >= CURRENT_DATE - INTERVAL '30 days' GROUP BY TO_CHAR(date, 'Day'), EXTRACT(DOW FROM date) ORDER BY EXTRACT(DOW FROM date)", "format": "table" }],
+      "options": { "cellHeight": "md" }
+    },
+    {
+      "id": 10,
+      "title": "🏆 Top Sources — 30 jours",
+      "type": "table",
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 6 },
+      "datasource": "PostgreSQL",
+      "targets": [{ "rawSql": "SELECT source as Source, SUM(count) as Total, ROUND(100.0 * SUM(count) / NULLIF(SUM(SUM(count)) OVER(), 0), 1) as Pourcentage FROM articles_per_source WHERE date >= CURRENT_DATE - INTERVAL '30 days' GROUP BY source ORDER BY Total DESC", "format": "table" }],
+      "options": { "sortBy": [{ "displayName": "Total", "desc": true }], "cellHeight": "md" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [{ "matcher": { "id": "byName", "options": "Pourcentage" }, "properties": [{ "id": "unit", "value": "percent" }, { "id": "custom.displayMode", "value": "lcd-gauge" }] }]
+      }
+    }
+  ]
+}
